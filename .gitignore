@@ -1,0 +1,13 @@
+__init__.py
+__pycache__/
+data_organization.py
+data_preprocessing.py
+evaluation.py
+feature_engineering.py
+logs/
+model_builder.py
+tempCodeRunnerFile.py
+test_metadata.csv
+train_metadata.csv
+train_model.py
+validation_metadata.csv
