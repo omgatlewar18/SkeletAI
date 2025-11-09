@@ -3,11 +3,6 @@
 
 ---
 
-## 🧑‍💻 Developer  
-**Developed by:** Om Gatlewar  
-**Email:** omgatlewar18@gmail.com 
-
----
 
 ## 🖥️ Live Demo  
 Try it here 👉 [**skeletai.streamlit.app**](https://skeletai.streamlit.app)
@@ -58,6 +53,11 @@ Traditional markers like the skull or pelvis are often unavailable — yet **han
 
 ---
 
+## 🧑‍💻 Developer  
+**Developed by:** Om Gatlewar  
+**Email:** omgatlewar18@gmail.com 
+
+---
 
 ## 🤝 Contributions  
 Open for collaboration, improvements, and research partnerships.  
