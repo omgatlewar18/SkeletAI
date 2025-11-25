@@ -17,8 +17,10 @@ BATCH_SIZE = 32
 CLASS_NAMES = ['Female', 'Male'] # Must match folder names in data/train
 
 # --- Model Parameters ---
-# Models to compare, as per synopsis (Phase 3)
-MODELS_TO_COMPARE = ['VGG16', 'ResNet50', 'MobileNetV2']
+# Updated list to only include ResNet50 and VGG19
+MODELS_TO_COMPARE = ['VGG19', 'ResNet50']
+# -----------------------------------------------------------
+
 # Default model to use for training or evaluation
 DEFAULT_MODEL = 'ResNet50' 
 
@@ -50,13 +52,13 @@ VALIDATION_CONFIG = {
 }
 
 # --- Grad-CAM Parameters ---
+# --- FIX: Removed unused model entries ---
 # Last convolutional layer for each model
 GRADCAM_LAYER_NAMES = {
-    'VGG16': 'block5_conv3',
-    'ResNet50': 'conv5_block3_out',
-    'MobileNetV2': 'out_relu' # MobileNetV2's last conv block output
+    'VGG19': 'block5_conv4',
+    'ResNet50': 'conv5_block3_out'
 }
+# ----------------------------------------
 
 if __name__ == "__main__":
     print("Config file loaded. This file is intended to be imported, not run directly.")
-

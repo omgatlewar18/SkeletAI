@@ -11,3 +11,4 @@ test_metadata.csv
 train_metadata.csv
 train_model.py
 validation_metadata.csv
+data/

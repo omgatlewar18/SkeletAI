@@ -24,7 +24,7 @@ except ImportError as e:
 # --- Page Configuration ---
 st.set_page_config(
     page_title="SkeletAI - Gender Estimation",
-    page_icon="🩻",
+    page_icon="🦴",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -42,10 +42,10 @@ st.markdown("""
         padding: 2rem; border-radius: 10px; margin: 1rem 0;
     }
     .male-box {
-        background-color: #F54927; border-left: 5px solid #1E88E5;
+        background-color: #33a9e8; border-left: 5px solid #1E88E5;
     }
     .female-box {
-        background-color: #F54927; border-left: 5px solid #E91E63;
+        background-color: #33a9e8; border-left: 5px solid #E91E63;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -73,7 +73,7 @@ def load_all_models():
         
     return models
 
-def preprocess_image(pil_image):
+def preprocess_image(pil_image, target_size=(224, 224)):
     """
     Preprocesses a single PIL image for model prediction.
     Matches the validation/test preprocessing (resize and rescale).
@@ -81,16 +81,20 @@ def preprocess_image(pil_image):
     # Convert PIL image to RGB (for 3-channel models)
     image = pil_image.convert('RGB')
     
-    # Resize to the model's expected input size
-    image = image.resize(config.IMAGE_SIZE)
+    # Resize to the model's expected input size. 
+    # Using the explicit target_size passed in, or defaulting to 224x224.
+    # This ensures the image matches the model's input layer exactly.
+    image = image.resize(target_size)
     
     # Convert to numpy array
     image_arr = img_to_array(image)
     
     # Apply rescaling (as done in validation)
-    image_arr = image_arr * config.VALIDATION_CONFIG['rescale']
+    # Check config for rescaling value, default to 1./255 if not found
+    rescale_val = config.VALIDATION_CONFIG.get('rescale', 1./255)
+    image_arr = image_arr * rescale_val
     
-    # Expand dimensions to create a batch of 1
+    # Expand dimensions to create a batch of 1: (1, 224, 224, 3)
     image_batch = np.expand_dims(image_arr, axis=0)
     
     return image_batch, image_arr # Return batch for prediction, array for display
@@ -108,26 +112,12 @@ def generate_visualization(model, model_name, processed_image_batch, original_im
     Generates the Grad-CAM heatmap and overlay.
     """
     try:
-        # --- FIX ---
-        # The GradCAM class __init__ is likely bugged and expects the model_name,
-        # not the layer_name. We will pass the model_name directly and let
-        # the GradCAM class handle the layer lookup from config.
-        
-        # OLD code:
-        # layer_name = config.GRADCAM_LAYER_NAMES.get(model_name)
-        # if not layer_name:
-        #     st.warning(f"No Grad-CAM layer defined for {model_name} in config.")
-        #     return None
-        # gradcam = get_gradcam_visualizer(model, layer_name)
-        
-        # NEW code:
-        # Pass model_name directly to work around the bug in gradcam.py
+        # Initialize GradCAM
         gradcam = get_gradcam_visualizer(model, model_name) 
         
         if gradcam is None:
              st.error(f"Failed to initialize Grad-CAM for {model_name}.")
              return None
-        # --- END FIX ---
         
         # Compute heatmap
         # processed_image_batch has shape (1, 224, 224, 3)
@@ -157,7 +147,7 @@ def main():
     """Main Streamlit app execution"""
     
     # Header
-    st.markdown('<div class="main-header">🩻 SkeletAI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">🦴 SkeletAI</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="sub-header">AI-Powered Gender Estimation from Hand Radiographs</div>',
         unsafe_allow_html=True
@@ -239,27 +229,35 @@ def main():
                 model = models[model_choice]
                 
                 # Preprocess the image
-                # We pass the original PIL image
-                processed_image_batch, _ = preprocess_image(image_pil)
+                # processed_image_batch should have shape (1, 224, 224, 3)
+                # We explicitly pass the target size from config to match the model input
+                processed_image_batch, _ = preprocess_image(image_pil, target_size=config.IMAGE_SIZE)
                 
-                # Predict
-                pred_proba = model.predict(processed_image_batch, verbose=0)[0][0]
-                
-                # Determine gender and confidence
-                if pred_proba > 0.5:
-                    gender = "Male"
-                    confidence = pred_proba
-                else:
-                    gender = "Female"
-                    confidence = 1 - pred_proba
+                # DEBUG: Check shape before prediction
+                # st.write(f"Debug: Input shape: {processed_image_batch.shape}")
+
+                try:
+                    # Predict
+                    # Ensure we are passing the 4D batch
+                    prediction_raw = model.predict(processed_image_batch, verbose=0)
+                    
+                    # Extract the scalar probability
+                    pred_proba = prediction_raw[0][0]
+                    
+                    # Determine gender and confidence
+                    if pred_proba > 0.5:
+                        gender = "Male"
+                        confidence = pred_proba
+                    else:
+                        gender = "Female"
+                        confidence = 1 - pred_proba
+                        
+                except ValueError as e:
+                    st.error(f"Prediction Error: Input shape mismatch. {e}")
+                    st.stop()
             
             # Display prediction
             box_class = "male-box" if gender == "Male" else "female-box"
-            
-            # --- DEBUGGING: Add raw probability score ---
-            # This helps check if the model is "stuck"
-            st.text(f"Raw Model Output (Sigmoid): {pred_proba:.4f}")
-            # --- END DEBUGGING ---
             
             st.markdown(f"""
                 <div class="prediction-box {box_class}">
@@ -315,13 +313,6 @@ def main():
         st.markdown("---")
         st.subheader("📊 Model Performance (from training logs)")
         st.text("You can fill this section with the results from your 'logs' folder.")
-        # Example:
-        # st.markdown("""
-        # ### ResNet50 Performance
-        # - **Accuracy:** 93.2%
-        # - **ROC-AUC:** 0.97
-        # """)
 
 if __name__ == "__main__":
     main()
-
